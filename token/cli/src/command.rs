@@ -1177,6 +1177,8 @@ async fn command_transfer(
     bulk_signers: BulkSigners,
     no_wait: bool,
     allow_non_system_account_recipient: bool,
+    additional_cu_price: Option<u64>,
+    additional_cu_limit: Option<u32>,
     transfer_hook_accounts: Option<Vec<AccountMeta>>,
     confidential_transfer_args: Option<&ConfidentialTransferArgs>,
 ) -> CommandResult {
@@ -1640,6 +1642,8 @@ async fn command_transfer(
                     &recipient_token_account,
                     &sender_owner,
                     transfer_balance,
+                    additional_cu_price,
+                    additional_cu_limit,
                     &bulk_signers,
                 )
                 .await?
@@ -2431,7 +2435,9 @@ async fn command_gc(
                             &associated_token_account,
                             &owner,
                             amount,
-                            &bulk_signers,
+                            None,
+                            None,
+                            &bulk_signers
                         )
                         .await,
                 ),
@@ -3779,6 +3785,9 @@ pub async fn process_command<'a>(
                     .collect::<Vec<_>>()
             });
 
+            let additional_cu_price = value_of::<u64>(arg_matches, "additional_cu_price");
+            let additional_cu_limit = value_of::<u32>(arg_matches, "additional_cu_limit");
+
             command_transfer(
                 config,
                 token,
@@ -3796,6 +3805,8 @@ pub async fn process_command<'a>(
                 bulk_signers,
                 arg_matches.is_present("no_wait"),
                 arg_matches.is_present("allow_non_system_account_recipient"),
+                additional_cu_price,
+                additional_cu_limit,
                 transfer_hook_accounts,
                 confidential_transfer_args.as_ref(),
             )

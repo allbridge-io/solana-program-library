@@ -1331,6 +1331,20 @@ pub fn app<'a, 'b>(
                         .help("Expected fee amount collected during the transfer"),
                 )
                 .arg(
+                    Arg::with_name("additional_cu_price")
+                        .long("additional-cu-price")
+                        .takes_value(true)
+                        .help("Additional compute unit price will add a Prioritization Fee \
+                                    above the Base Fee (5,000 Lamports)\
+                                    The value provided in microLamports"),
+                )
+                .arg(
+                    Arg::with_name("additional_cu_limit")
+                        .long("additional-cu-limit")
+                        .takes_value(true)
+                        .help("Additional compute unit limit will replace default limit 200_000"),
+                )
+                .arg(
                     Arg::with_name("transfer_hook_account")
                         .long("transfer-hook-account")
                         .validator(validate_transfer_hook_account)

@@ -509,6 +509,7 @@ where
         &self,
         token_instructions: &[Instruction],
         additional_compute_budget: Option<u32>,
+        additional_cu_price: Option<u64>,
         signing_keypairs: &S,
     ) -> TokenResult<Transaction> {
         let mut instructions = vec![];
@@ -537,6 +538,13 @@ where
             instructions.push(
                 solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_limit(
                     additional_compute_budget,
+                ),
+            );
+        }
+        if let Some(additional_cu_price) = additional_cu_price {
+            instructions.push(
+                solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_price(
+                    additional_cu_price,
                 ),
             );
         }
@@ -598,7 +606,7 @@ where
         signing_keypairs: &S,
     ) -> TokenResult<T::SimulationOutput> {
         let transaction = self
-            .construct_tx(token_instructions, None, signing_keypairs)
+            .construct_tx(token_instructions, None, None, signing_keypairs)
             .await?;
 
         self.client
@@ -613,7 +621,28 @@ where
         signing_keypairs: &S,
     ) -> TokenResult<T::Output> {
         let transaction = self
-            .construct_tx(token_instructions, None, signing_keypairs)
+            .construct_tx(token_instructions, None, None, signing_keypairs)
+            .await?;
+
+        self.client
+            .send_transaction(&transaction)
+            .await
+            .map_err(TokenError::Client)
+    }
+
+    pub async fn process_ixs_with_additional_params<S: Signers>(
+        &self,
+        token_instructions: &[Instruction],
+        additional_cu_limit: Option<u32>,
+        additional_cu_price: Option<u64>,
+        signing_keypairs: &S,
+    ) -> TokenResult<T::Output> {
+        let transaction = self
+            .construct_tx(
+                token_instructions,
+                additional_cu_limit,
+                additional_cu_price,
+                signing_keypairs)
             .await?;
 
         self.client
@@ -632,6 +661,7 @@ where
             .construct_tx(
                 token_instructions,
                 Some(additional_compute_budget),
+                None,
                 signing_keypairs,
             )
             .await?;
@@ -945,6 +975,8 @@ where
         destination: &Pubkey,
         authority: &Pubkey,
         amount: u64,
+        additional_cu_price: Option<u64>,
+        additional_cu_limit: Option<u32>,
         signing_keypairs: &S,
     ) -> TokenResult<T::Output> {
         let signing_pubkeys = signing_keypairs.pubkeys();
@@ -997,7 +1029,7 @@ where
             )?
         };
 
-        self.process_ixs(&[instruction], signing_keypairs).await
+        self.process_ixs_with_additional_params(&[instruction], additional_cu_limit, additional_cu_price, signing_keypairs).await
     }
 
     /// Transfer tokens to an associated account, creating it if it does not
